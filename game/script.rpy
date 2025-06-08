@@ -22,42 +22,79 @@ image bg cellar = "#1a1a1a"
 image bg attic = "#2f2419"
 image bg bedroom = "#4a3829"
 
+call save_progress from _call_save_progress
+
 label start:
+    jump enhanced_start
+
+label enhanced_start:
+    if persistent.playthroughs > 0:
+        menu:
+            "Would you like to play the enhanced version with your accumulated knowledge?"
+            "Enhanced Version (Recommended)":
+                jump new_game_plus
+            "Original Experience":
+                jump start
+    else:
+        jump start_enhanced_game
+
+label random_manor_events:
+    $ import random
+    $ event_chance = random.randint(1, 10)
     
-    scene bg mansion_exterior
-    with fade
-    
-    play music "audio/spooky_ambience.ogg" fadeout 1.0 fadein 2.0
-    
-    narrator "The rain pounds against your car windshield as you pull up to Ravenshollow Manor."
-    narrator "Lightning illuminates the Victorian mansion's Gothic towers and crumbling stonework."
-    narrator "You've inherited this place from a great aunt you never knew existed."
-    narrator "The lawyer's letter mentioned 'unusual circumstances' surrounding her death..."
-    
-    player "Well, no turning back now."
-    
-    narrator "You grab your bag and run through the downpour to the massive oak front door."
-    narrator "An ornate brass knocker shaped like a raven's head stares down at you."
+    if event_chance <= 3 and current_time >= 22:
+        jump midnight_wanderer
+    elif event_chance <= 5 and "protection_herbs" in inventory:
+        jump herb_reaction
+    elif event_chance <= 7 and sanity < 50:
+        jump sanity_episode
+    else:
+        return
+
+label midnight_wanderer:
+    narrator "You hear footsteps in the hallway outside your room."
+    narrator "They stop right outside your door..."
     
     menu:
-        "{s}Knock on the door{/s}" if "knock_door" in selected_choices:
-            $ selected_choices.add("knock_door")
-            jump knock_door
-        "Knock on the door" if "knock_door" not in selected_choices:
-            $ selected_choices.add("knock_door")
-            jump knock_door
-        "{s}Try the door handle{/s}" if "try_handle" in selected_choices:
-            $ selected_choices.add("try_handle")
-            jump try_handle
-        "Try the door handle" if "try_handle" not in selected_choices:
-            $ selected_choices.add("try_handle")
-            jump try_handle
-        "{s}Look for another entrance{/s}" if "find_entrance" in selected_choices:
-            $ selected_choices.add("find_entrance")
-            jump find_entrance
-        "Look for another entrance" if "find_entrance" not in selected_choices:
-            $ selected_choices.add("find_entrance")
-            jump find_entrance
+        "Investigate the sound":
+            narrator "You open the door to find the hallway empty."
+            narrator "But wet footprints lead toward the cellar."
+            $ lose_sanity(5)
+            $ found_clues.append("mysterious_footprints")
+        
+        "Stay hidden and listen":
+            narrator "The footsteps continue past your room."
+            narrator "You hear a door creak open somewhere in the distance."
+            $ gain_sanity(2)  # Avoided confrontation
+    
+    return
+
+label herb_reaction:
+    narrator "The protective herbs in your inventory begin to glow faintly."
+    narrator "Something supernatural is near..."
+    
+    $ lose_sanity(3)
+    narrator "The herbs have warned you of danger."
+    
+    return
+
+label sanity_episode:
+    narrator "Reality becomes unstable. The walls breathe, shadows move independently."
+    narrator "You question what's real and what's in your mind."
+    
+    menu:
+        "Ground yourself in reality":
+            narrator "You focus on physical sensations - your heartbeat, the floor beneath your feet."
+            narrator "Slowly, the hallucinations fade."
+            $ gain_sanity(5)
+        
+        "Embrace the visions":
+            narrator "You let the supernatural perceptions wash over you."
+            narrator "Perhaps madness offers its own kind of insight..."
+            $ lose_sanity(10)
+            $ found_clues.append("madness_insight")
+    
+    return
 
 label knock_door:
     narrator "The knocker feels ice cold in your hand. Three heavy thuds echo through the manor."
