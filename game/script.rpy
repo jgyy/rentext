@@ -331,51 +331,46 @@ label ask_death:
     jump explore_mansion
 
 label explore_mansion:
+    $ change_location("foyer")
     $ rooms_explored += 1
+    
+    # Reset temporary actions every few room changes
+    if rooms_explored % 3 == 0:
+        $ reset_temporary_actions()
     
     narrator "The manor stretches out before you, full of mysteries waiting to be uncovered."
     
+    # Show different options based on what's been done and current state
     menu:
-        "{s}Explore the Library{/s}" if "explore_library" in selected_choices:
-            $ selected_choices.add("explore_library")
+        "Explore the Library" if can_visit_location("library"):
+            $ mark_action_completed("chose_library")
             jump library
-        "Explore the Library" if "explore_library" not in selected_choices:
-            $ selected_choices.add("explore_library")
-            jump library
-        "{s}Visit the Dining Room{/s}" if "visit_dining" in selected_choices:
-            $ selected_choices.add("visit_dining")
+            
+        "Visit the Dining Room" if can_visit_location("dining_room"):
+            $ mark_action_completed("chose_dining")
             jump dining_room
-        "Visit the Dining Room" if "visit_dining" not in selected_choices:
-            $ selected_choices.add("visit_dining")
-            jump dining_room
-        "{s}Go to the Cellar{/s}" if "go_cellar" in selected_choices:
-            $ selected_choices.add("go_cellar")
+            
+        "Go to the Cellar" if can_visit_location("cellar"):
+            $ mark_action_completed("chose_cellar")
             jump cellar
-        "Go to the Cellar" if "go_cellar" not in selected_choices:
-            $ selected_choices.add("go_cellar")
-            jump cellar
-        "{s}Check the Attic{/s}" if "check_attic" in selected_choices:
-            $ selected_choices.add("check_attic")
+            
+        "Check the Attic" if can_visit_location("attic"):
+            $ mark_action_completed("chose_attic")
             jump attic
-        "Check the Attic" if "check_attic" not in selected_choices:
-            $ selected_choices.add("check_attic")
-            jump attic
-        "{s}Rest in the Bedroom{/s}" if "rest_bedroom" in selected_choices:
-            if rooms_explored >= 3:
-                $ selected_choices.add("rest_bedroom")
-                jump bedroom
-            else:
-                narrator "You're not tired yet. There's too much to explore."
-                jump explore_mansion
-        "Rest in the Bedroom" if "rest_bedroom" not in selected_choices:
-            if rooms_explored >= 3:
-                $ selected_choices.add("rest_bedroom")
-                jump bedroom
-            else:
-                narrator "You're not tired yet. There's too much to explore."
-                jump explore_mansion
+            
+        "Rest in the Bedroom" if rooms_explored >= 3 and can_visit_location("bedroom"):
+            $ mark_action_completed("chose_bedroom")
+            jump bedroom
+            
+        "Use Enhanced Exploration Options" if rooms_explored >= 2:
+            jump enhanced_explore_mansion
+            
+        "Review Evidence and Plan Next Move" if len(found_clues) >= 3:
+            jump review_progress
 
 label library:
+    $ change_location("library")
+    
     scene bg library
     with fade
     
@@ -390,26 +385,26 @@ label library:
     narrator "One headline catches your eye: 'THIRD RAVENSHOLLOW HEIR VANISHES MYSTERIOUSLY'"
     
     menu:
-        "{s}Read the journals{/s}" if "read_journals" in selected_choices:
-            $ selected_choices.add("read_journals")
+        "Read the journals" if can_perform_action("read_journals"):
+            $ mark_action_completed("read_journals")
             jump read_journals
-        "Read the journals" if "read_journals" not in selected_choices:
-            $ selected_choices.add("read_journals")
-            jump read_journals
-        "{s}Examine the family tree{/s}" if "examine_tree" in selected_choices:
-            $ selected_choices.add("examine_tree")
+            
+        "Examine the family tree" if can_perform_action("examine_tree"):
+            $ mark_action_completed("examine_tree")
             jump family_tree
-        "Examine the family tree" if "examine_tree" not in selected_choices:
-            $ selected_choices.add("examine_tree")
-            jump family_tree
-        "{s}Search for hidden passages{/s}" if "search_passages" in selected_choices:
-            $ selected_choices.add("search_passages")
+            
+        "Search for hidden passages" if can_perform_action("search_passages"):
+            $ mark_action_completed("search_passages")
             jump secret_passage
-        "Search for hidden passages" if "search_passages" not in selected_choices:
-            $ selected_choices.add("search_passages")
-            jump secret_passage
+            
+        "Return to exploring other areas":
+            jump explore_mansion
 
 label read_journals:
+    if get_scene_visits("library") > 3:
+        narrator "You've already thoroughly read these journals. There's nothing new to discover here."
+        jump explore_mansion
+    
     narrator "Your great aunt's handwriting is elegant but urgent in her final entries:"
     narrator "'The dreams are getting worse. Silas calls to me nightly.'"
     narrator "'I've found the ritual chamber. The key is hidden where the raven watches.'"
@@ -424,6 +419,10 @@ label read_journals:
     jump explore_mansion
 
 label family_tree:
+    if get_scene_visits("library") > 3:
+        narrator "You've already studied the family tree extensively."
+        jump explore_mansion
+        
     narrator "The family tree shows a disturbing pattern."
     narrator "Every generation for the past 200 years has lost someone around age 30."
     narrator "All died under mysterious circumstances."
@@ -461,6 +460,8 @@ label secret_passage:
         jump explore_mansion
 
 label dining_room:
+    $ change_location("dining_room")
+    
     scene bg dining_room
     with fade
     
@@ -471,34 +472,113 @@ label dining_room:
     narrator "A brass nameplate reads: 'SILAS RAVENSHOLLOW - PATRIARCH'"
     narrator "His painted eyes seem to follow you around the room."
     
-    narrator "On the mantelpiece, you notice a small brass key next to a raven figurine."
-    
-    if "raven_key" in found_clues:
-        narrator "This must be the key your great aunt mentioned!"
-        $ has_key = True
-        narrator "You pocket the key carefully."
+    if not has_key:
+        narrator "On the mantelpiece, you notice a small brass key next to a raven figurine."
+        
+        if "raven_key" in found_clues:
+            narrator "This must be the key your great aunt mentioned!"
+            $ has_key = True
+            $ mark_action_completed("took_raven_key")
+            narrator "You pocket the key carefully."
+        else:
+            menu:
+                "Take the key" if can_perform_action("take_key"):
+                    $ has_key = True
+                    $ mark_action_completed("take_key")
+                    narrator "The key feels warm in your hand, despite the cold room."
+                    
+                "Leave it alone" if can_perform_action("leave_key"):
+                    $ mark_action_completed("leave_key")
+                    narrator "You decide to leave the key for now."
     else:
-        menu:
-            "{s}Take the key{/s}" if "take_key" in selected_choices:
-                $ selected_choices.add("take_key")
-                $ has_key = True
-                narrator "The key feels warm in your hand, despite the cold room."
-                jump explore_mansion
-            "Take the key" if "take_key" not in selected_choices:
-                $ selected_choices.add("take_key")
-                $ has_key = True
-                narrator "The key feels warm in your hand, despite the cold room."
-                jump explore_mansion
-            "{s}Leave it alone{/s}" if "leave_key" in selected_choices:
-                $ selected_choices.add("leave_key")
-                jump explore_mansion
-            "Leave it alone" if "leave_key" not in selected_choices:
-                $ selected_choices.add("leave_key")
-                jump explore_mansion
+        narrator "You already have the brass key from this room."
     
-    jump explore_mansion
+    menu:
+        "Examine the portrait more closely" if can_perform_action("examine_portrait"):
+            $ mark_action_completed("examine_portrait")
+            narrator "The portrait's eyes seem to track your movement. Unsettling."
+            narrator "You notice a small inscription: 'He who watches, never dies.'"
+            $ found_clues.append("portrait_inscription")
+            
+        "Return to exploring other areas":
+            jump explore_mansion
+
+label enhanced_explore_mansion:
+    $ change_location("foyer_enhanced")
+    $ current_edmund_state = check_edmund_state()
+    
+    narrator "Current time: [current_time]:00. Edmund seems [current_edmund_state]."
+    
+    if sanity < 30:
+        narrator "The walls seem to breathe and shift before your eyes..."
+    elif sanity < 60:
+        narrator "You feel increasingly on edge. Nothing seems quite right."
+    
+    menu:
+        "Explore the Greenhouse" if can_visit_location("greenhouse"):
+            $ advance_time(1)
+            jump greenhouse
+            
+        "Visit the Family Cemetery" if can_visit_location("cemetery"):
+            $ advance_time(1)
+            jump cemetery
+            
+        "Investigate the Music Room" if can_visit_location("music_room"):
+            $ advance_time(1)
+            jump music_room
+            
+        "Check the Observatory" if can_visit_location("observatory") and has_key:
+            $ advance_time(1)
+            jump observatory
+            
+        "Search for Hidden Passages" if can_perform_action("search_hidden_passages"):
+            $ mark_action_completed("search_hidden_passages")
+            $ advance_time(2)
+            jump hidden_passages
+            
+        "Go to Town for Information" if days_survived >= 2 and can_perform_action("town_visit"):
+            $ mark_action_completed("town_visit")
+            $ advance_time(3)
+            jump town_investigation
+            
+        "Rest and Recover" if sanity < 70 and can_perform_action("rest_recover"):
+            $ mark_action_completed("rest_recover")
+            $ gain_sanity(20)
+            $ advance_time(2)
+            narrator "You rest for a while and feel somewhat better."
+            jump enhanced_explore_mansion
+            
+        "Return to Basic Exploration":
+            jump explore_mansion
+
+label review_progress:
+    narrator "You take a moment to review everything you've discovered so far."
+    narrator "Clues found: [len(found_clues)]"
+    narrator "Evidence collected: [len(evidence_board)]"
+    narrator "Documents discovered: [len(documents_found)]"
+    
+    if len(found_clues) >= 8:
+        narrator "You feel like you're close to understanding the truth."
+        narrator "Perhaps it's time to take decisive action."
+        
+        menu:
+            "Proceed to final confrontation" if "ritual_knowledge" in found_clues:
+                jump final_confrontation
+                
+            "Continue investigating" if can_perform_action("continue_investigating"):
+                $ mark_action_completed("continue_investigating")
+                jump explore_mansion
+                
+            "Call Detective Mills" if "detective_card" in found_clues and can_perform_action("call_mills"):
+                $ mark_action_completed("call_mills")
+                jump call_detective
+    else:
+        narrator "You need to gather more information before making any major decisions."
+        jump explore_mansion
 
 label cellar:
+    $ change_location("cellar")
+    
     scene bg cellar
     with fade
     
@@ -506,26 +586,27 @@ label cellar:
         narrator "You descend the stone stairs to the cellar."
         narrator "The air grows colder with each step."
         narrator "At the bottom, you see dark stains on the stone floor."
-        
         $ found_clues.append("blood_pattern")
+    else:
+        narrator "You return to the cellar where your great aunt died."
     
     narrator "Wine racks line the walls, but many bottles are empty or broken."
     narrator "In the far corner, you notice a heavy wooden door with iron reinforcements."
     
-    if has_key:
+    if has_key and can_perform_action("use_cellar_key"):
         narrator "The brass key from the dining room might fit this lock."
         menu:
-            "{s}Use the key{/s}" if "use_key" in selected_choices:
-                $ selected_choices.add("use_key")
+            "Use the key":
+                $ mark_action_completed("use_cellar_key")
                 jump locked_room
-            "Use the key" if "use_key" not in selected_choices:
-                $ selected_choices.add("use_key")
-                jump locked_room
-            "{s}Leave the door alone{/s}" if "leave_door" in selected_choices:
-                $ selected_choices.add("leave_door")
+            "Leave the door alone":
                 jump explore_mansion
-            "Leave the door alone" if "leave_door" not in selected_choices:
-                $ selected_choices.add("leave_door")
+    elif has_key:
+        narrator "You've already unlocked this door."
+        menu:
+            "Enter the ritual chamber":
+                jump locked_room
+            "Leave":
                 jump explore_mansion
     else:
         narrator "The door is locked with an old-fashioned brass lock."
@@ -578,6 +659,19 @@ label locked_room:
             jump skeptical
 
 label break_curse:
+    if get_scene_visits("ritual_chamber") > 2:
+        narrator "You've already discussed this thoroughly with Margaret's spirit."
+        narrator "It's time to make a decision."
+        
+        menu:
+            "Perform the ritual":
+                jump good_ending
+            "Refuse to do the ritual":
+                jump bad_ending
+            "Leave and think more":
+                jump explore_mansion
+        return
+    
     ghost "The ritual requires a willing sacrifice of blood from Silas's bloodline."
     ghost "You must cut your palm with the ceremonial dagger and let three drops fall on the ritual circle."
     ghost "Then speak the words: 'I release what was bound, I free what was chained.'"
@@ -589,23 +683,11 @@ label break_curse:
     ghost "You will inherit the manor truly, free of its dark influence."
     
     menu:
-        "{s}Perform the ritual{/s}" if "perform_ritual" in selected_choices:
-            $ selected_choices.add("perform_ritual")
+        "Perform the ritual":
             jump good_ending
-        "Perform the ritual" if "perform_ritual" not in selected_choices:
-            $ selected_choices.add("perform_ritual")
-            jump good_ending
-        "{s}Refuse to do the ritual{/s}" if "refuse_ritual" in selected_choices:
-            $ selected_choices.add("refuse_ritual")
+        "Refuse to do the ritual":
             jump bad_ending
-        "Refuse to do the ritual" if "refuse_ritual" not in selected_choices:
-            $ selected_choices.add("refuse_ritual")
-            jump bad_ending
-        "{s}Ask for more time to think{/s}" if "more_time" in selected_choices:
-            $ selected_choices.add("more_time")
-            jump explore_mansion
-        "Ask for more time to think" if "more_time" not in selected_choices:
-            $ selected_choices.add("more_time")
+        "Ask for more time to think":
             jump explore_mansion
 
 label why_failed:
@@ -684,6 +766,8 @@ label attic:
     jump explore_mansion
 
 label bedroom:
+    $ change_location("bedroom")
+    
     scene bg bedroom
     with fade
     
@@ -691,33 +775,31 @@ label bedroom:
     narrator "Personal effects lie scattered on the vanity table."
     narrator "The bed is still unmade, as if she left in a hurry that final night."
     
-    narrator "On the nightstand, you find Detective Mills' business card and a note:"
-    narrator "'Call Mills if anything strange happens. He knows the truth.'"
+    if "detective_card" not in found_clues:
+        narrator "On the nightstand, you find Detective Mills' business card and a note:"
+        narrator "'Call Mills if anything strange happens. He knows the truth.'"
+        $ found_clues.append("detective_card")
     
-    $ found_clues.append("detective_card")
-    
-    if len(found_clues) >= 5:
+    if len(found_clues) >= 5 and can_perform_action("first_sleep"):
         narrator "You're exhausted from exploring and learning the dark secrets of the manor."
         narrator "As you lie down on the bed, you notice the temperature dropping rapidly."
         
         menu:
-            "{s}Try to sleep{/s}" if "try_sleep" in selected_choices:
-                $ selected_choices.add("try_sleep")
+            "Try to sleep":
+                $ mark_action_completed("first_sleep")
                 jump nightmare_sequence
-            "Try to sleep" if "try_sleep" not in selected_choices:
-                $ selected_choices.add("try_sleep")
-                jump nightmare_sequence
-            "{s}Stay awake and call Detective Mills{/s}" if "call_detective" in selected_choices and "detective_card" in found_clues:
-                $ selected_choices.add("call_detective")
+                
+            "Stay awake and call Detective Mills" if "detective_card" in found_clues:
+                $ mark_action_completed("call_detective_bedroom")
                 jump call_detective
-            "Stay awake and call Detective Mills" if "call_detective" not in selected_choices and "detective_card" in found_clues:
-                $ selected_choices.add("call_detective")
-                jump call_detective
-            "{s}Go back to exploring{/s}" if "keep_exploring" in selected_choices:
-                $ selected_choices.add("keep_exploring")
+                
+            "Go back to exploring":
                 jump explore_mansion
-            "Go back to exploring" if "keep_exploring" not in selected_choices:
-                $ selected_choices.add("keep_exploring")
+                
+    elif "first_sleep" in completed_actions:
+        narrator "You've already rested here. The bedroom holds no more secrets for now."
+        menu:
+            "Return to exploring":
                 jump explore_mansion
     else:
         narrator "You're not ready to rest yet. There's still too much to discover."
@@ -764,6 +846,12 @@ label hidden_treasure:
     jump explore_mansion
 
 label good_ending:
+    if "ending_reached" in completed_actions:
+        narrator "You've already completed this path."
+        return
+        
+    $ mark_action_completed("ending_reached")
+    
     narrator "You pick up the ceremonial dagger with trembling hands."
     narrator "The blade is surprisingly sharp and seems to hum with energy."
     
@@ -793,11 +881,20 @@ label good_ending:
     narrator "You've broken a cycle of death that lasted two hundred years."
     narrator "The manor is finally at peace... and so are you."
     
+    $ unlock_achievement("truth_seeker")
+    $ track_ending("good_ending")
+    
     narrator "THE END - CURSE BROKEN"
     
     return
 
 label bad_ending:
+    if "ending_reached" in completed_actions:
+        narrator "You've already completed this path."
+        return
+        
+    $ mark_action_completed("ending_reached")
+    
     player "I'm sorry, but I can't do this. There has to be another way."
     
     ghost "You fool! You've doomed yourself and all future generations!"
@@ -816,6 +913,8 @@ label bad_ending:
     
     narrator "The darkness closes in around you."
     narrator "You've become the latest victim of the Ravenshollow curse."
+    
+    $ track_ending("bad_ending")
     
     narrator "THE END - CURSE CONTINUES"
     

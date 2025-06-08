@@ -32,7 +32,13 @@ default knows_secret = False
 default butler_trust = 0
 default rooms_explored = 0
 default found_clues = []
-default selected_choices = set()
+
+default visited_locations = set()
+default current_location = "mansion_exterior"
+default last_location = ""
+
+default completed_actions = set()
+default current_scene_visits = {}
 
 default sanity = 100
 default paranoia_level = 0
@@ -59,6 +65,39 @@ default achievements = {
 }
 
 init python:
+    def can_visit_location(location):
+        """Check if player can visit a location (not just came from there)"""
+        return location != current_location
+    
+    def can_perform_action(action):
+        """Check if an action can be performed (hasn't been done recently)"""
+        return action not in completed_actions
+    
+    def mark_action_completed(action):
+        """Mark an action as completed to prevent immediate repetition"""
+        completed_actions.add(action)
+    
+    def reset_temporary_actions():
+        """Reset actions that can be done again after some time"""
+        global completed_actions
+        permanent_actions = {"ritual_performed", "curse_broken", "ending_reached"}
+        completed_actions = {action for action in completed_actions if action in permanent_actions}
+    
+    def change_location(new_location):
+        """Safely change location and update tracking"""
+        global current_location, last_location, visited_locations
+        last_location = current_location
+        current_location = new_location
+        visited_locations.add(new_location)
+        
+        if new_location not in current_scene_visits:
+            current_scene_visits[new_location] = 0
+        current_scene_visits[new_location] += 1
+    
+    def get_scene_visits(location):
+        """Get number of times player has visited a scene"""
+        return current_scene_visits.get(location, 0)
+
     if persistent.total_achievements is None:
         persistent.total_achievements = {
             "detective": False,
