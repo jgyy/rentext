@@ -1,0 +1,114 @@
+# Ren'Py specific files
+*.rpyc
+*.rpymc
+*.rpyb
+cache/
+saves/
+persistent
+log.txt
+errors.txt
+traceback.txt
+files.txt
+*.save
+tmp/
+
+# Ren'Py build files
+*.app/
+*.exe
+*.zip
+*.tar.bz2
+*.dmg
+*.pkg
+android.txt
+launcherinfo.py
+
+# Screenshots and test files
+screenshot*.png
+screenshot*.jpg
+
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Archive files (if not part of project)
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Android build files (if using Ren'Py Android)
+*.apk
+*.aab
+android-*/
+rapt/
+
+# Web build files
+web-*/
+
+# Steam build files
+steam-*/
+
+# Documentation build files
+doc/_build/
+tmp
+game/tmp
