@@ -1,4 +1,4 @@
-﻿﻿# game/screens.rpy
+﻿# game/screens.rpy
 init offset = -1
 
 style default:
