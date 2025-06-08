@@ -180,11 +180,11 @@ style choice_button_text is default:
 screen quick_menu():
     zorder 100
 
-    if quick_menu:
+    $ enhanced = hasattr(store, 'sanity') and sanity is not None
 
+    if quick_menu:
         hbox:
             style_prefix "quick"
-
             xalign 0.5
             yalign 1.0
 
@@ -195,6 +195,12 @@ screen quick_menu():
             textbutton _("Save") action ShowMenu('save')
             textbutton _("Q.Save") action QuickSave()
             textbutton _("Q.Load") action QuickLoad()
+            
+            if enhanced:
+                textbutton _("Inventory") action ShowMenu('inventory')
+                textbutton _("Evidence") action ShowMenu('evidence_board')
+                textbutton _("Status") action ShowMenu('status')
+            
             textbutton _("Prefs") action ShowMenu('preferences')
 
 init python:
@@ -212,47 +218,46 @@ style quick_button_text:
     properties gui.text_properties("quick_button")
 
 screen navigation():
-
     vbox:
         style_prefix "navigation"
-
         xpos gui.navigation_xpos
         yalign 0.5
-
         spacing gui.navigation_spacing
 
         if main_menu:
-
-            textbutton _("Start") action Start()
-
+            textbutton _("New Game") action Start()
+            if persistent.playthroughs > 0:
+                textbutton _("Continue Enhanced") action Start("start_enhanced_game")
         else:
-
             textbutton _("History") action ShowMenu("history")
-
             textbutton _("Save") action ShowMenu("save")
 
         textbutton _("Load") action ShowMenu("load")
-
+        
+        if not main_menu:
+            if hasattr(store, 'inventory') and inventory is not None:
+                textbutton _("Inventory") action ShowMenu("inventory")
+            if hasattr(store, 'evidence_board') and evidence_board is not None:
+                textbutton _("Evidence Board") action ShowMenu("evidence_board")
+            if hasattr(store, 'sanity') and sanity is not None:
+                textbutton _("Status") action ShowMenu("status")
+            if hasattr(store, 'achievements') and achievements is not None:
+                textbutton _("Achievements") action ShowMenu("achievements")
+        
         textbutton _("Preferences") action ShowMenu("preferences")
 
         if _in_replay:
-
             textbutton _("End Replay") action EndReplay(confirm=True)
-
         elif not main_menu:
-
             textbutton _("Main Menu") action MainMenu()
 
         textbutton _("About") action ShowMenu("about")
 
         if renpy.variant("pc") or (renpy.variant("web") and not renpy.variant("mobile")):
-
             textbutton _("Help") action ShowMenu("help")
 
         if renpy.variant("pc"):
-
             textbutton _("Quit") action Quit(confirm=not main_menu)
-
 
 style navigation_button is gui_button
 style navigation_button_text is gui_button_text
@@ -1284,25 +1289,6 @@ define bubble.expand_area = {
 style pref_vbox:
     variant "medium"
     xsize 675
-
-screen quick_menu():
-    variant "touch"
-
-    zorder 100
-
-    if quick_menu:
-
-        hbox:
-            style_prefix "quick"
-
-            xalign 0.5
-            yalign 1.0
-
-            textbutton _("Back") action Rollback()
-            textbutton _("Skip") action Skip() alternate Skip(fast=True, confirm=True)
-            textbutton _("Auto") action Preference("auto-forward", "toggle")
-            textbutton _("Menu") action ShowMenu()
-
 
 style window:
     variant "small"

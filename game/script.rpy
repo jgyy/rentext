@@ -5,15 +5,6 @@ define butler = Character("Edmund", color="#a0a0ff")
 define ghost = Character("???", color="#ff9999")
 define detective = Character("Detective Mills", color="#ffff99")
 
-default has_key = False
-default has_flashlight = False
-default knows_secret = False
-default butler_trust = 0
-default rooms_explored = 0
-default found_clues = []
-
-default selected_choices = set()
-
 image bg mansion_exterior = "#2c1810"
 image bg foyer = "#3d2817"
 image bg library = "#4a3423"
@@ -22,21 +13,33 @@ image bg cellar = "#1a1a1a"
 image bg attic = "#2f2419"
 image bg bedroom = "#4a3829"
 
-call save_progress from _call_save_progress
-
 label start:
     jump enhanced_start
 
 label enhanced_start:
+    call save_progress from _call_save_progress
+    
     if persistent.playthroughs > 0:
         menu:
             "Would you like to play the enhanced version with your accumulated knowledge?"
             "Enhanced Version (Recommended)":
                 jump new_game_plus
             "Original Experience":
-                jump start
+                jump original_start
     else:
         jump start_enhanced_game
+
+label new_game_plus:
+    narrator "You begin your return to Ravenshollow Manor, but this time with the wisdom of experience..."
+    
+    if persistent.total_achievements.get("detective", False):
+        $ found_clues.append("detective_knowledge")
+        narrator "Your previous investigative experience serves you well."
+    
+    jump start_enhanced_game
+
+label original_start:
+    jump knock_door
 
 label random_manor_events:
     $ import random
